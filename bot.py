@@ -45,7 +45,7 @@ BOT_TOKEN = os.getenv('BOT_TOKEN')
 admin_env = os.getenv('ADMIN_ID', '')  # Agar topilmasa, bo'sh matn oladi (xato bermaydi)
 
 # Bu yerda vergul bor-yo'qligini o'zi tekshirib, ro'yxatga aylantiradi
-ADMIN_IDS = [int(x.strip()) for x in admin_env.split(',') if x.strip().isdigit()]
+ADMIN_ID= [int(x.strip()) for x in admin_env.split(',') if x.strip().isdigit()]
 CHANNEL_ID = int(os.getenv('CHANNEL_ID'))
 BOT_USERNAME = "@AF_kino_bot"  # O'zingizni bot usernameni shu yerga yozing
 
