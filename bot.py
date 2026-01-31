@@ -41,16 +41,10 @@ logger = logging.getLogger(__name__)
 
 # Environment variables
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+ADMIN_ID = int(os.getenv('ADMIN_ID'))
 
-# YANGI VA XAVFSIZ KOD (Shuni o'rniga yozing):
-admin_env = os.getenv('ADMIN_ID', '')  # Agar yo'q bo'lsa, bo'sh matn oladi
-if admin_env:
-    ADMIN_IDS = [int(id_str.strip()) for id_str in admin_env.split(',') if id_str.strip()]
-else:
-    ADMIN_IDS = []
-    print("⚠️ DIQQAT: ADMIN_ID topilmadi! Admin funksiyalari ishlamaydi.")
 CHANNEL_ID = int(os.getenv('CHANNEL_ID'))
-BOT_USERNAME = "@kino_zakaz2026_bot"  # O'zingizni bot usernameni shu yerga yozing
+BOT_USERNAME = "@AF_kino_bot"  # O'zingizni bot usernameni shu yerga yozing
 
 # Initialize database
 db = Database()
