@@ -253,19 +253,20 @@ async def admin_manage_channels(update: Update, context: ContextTypes.DEFAULT_TY
     if channels:
         for ch in channels:
             text += f"• {ch.get('channel_username', 'ID: ' + str(ch['channel_id']))}\n"
-            # O'chirish tugmasi har bir kanal uchun
+            # O'chirish tugmasi
             keyboard.append([InlineKeyboardButton(f"🗑 O'chirish: {ch.get('channel_username', 'ID')}", callback_data=f"del_ch_{ch['channel_id']}")])
     else:
         text += "Kanallar yo'q."
 
-    # Kanal qo'shish tugmasi (Reply keyboardda bor, lekin bu yerda inline ham qo'shsa bo'ladi, biz reply ishlatamiz)
-    # Bu yerda faqat ro'yxatni ko'rsatamiz, o'chirish uchun inline qulayroq
+    # --- O'ZGARGAYOTGAN JOY: Qo'shish tugmasini inline qilib qo'shamiz ---
+    keyboard.append([InlineKeyboardButton("➕ Kanal qo'shish", callback_data="add_new_channel")])
+    # --------------------------------------------------------------------
 
-    # Kanal qo'shish uchun alohida instruksiya
-    text += "\n\n➕ Kanal qo'shish uchun pastdagi '📢 Kanallar boshqaruvi' menyusidan foydalaning (hozircha alohida tugma shart emas, chunki add_channel flow bor)."
-
-    await update.message.reply_text(text, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None)
-
+    await update.message.reply_text(
+        text,
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 # ===== DELETE MOVIE CONVERSATION =====
 
 async def start_delete_movie(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -400,13 +401,24 @@ async def receive_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start_add_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID: return ConversationHandler.END
 
-    await update.message.reply_text(
-        "📢 <b>Kanal qo'shish</b>\n\n"
-        "Kanal ID sini yuboring (masalan: -100123456789).",
-        reply_markup=ReplyKeyboardRemove()
-    )
-    return WAITING_FOR_CHANNEL_ID
+    # Agar tugma orqali kelgan bo'lsa
+    if update.callback_query:
+        await update.callback_query.answer()
+        await update.callback_query.message.reply_text(
+            "📢 <b>Kanal qo'shish</b>\n\n"
+            "Kanal ID sini yuboring (masalan: -100123456789).",
+            parse_mode=ParseMode.HTML
+        )
+    # Agar matn orqali kelgan bo'lsa (eski usul qolishi uchun)
+    else:
+        await update.message.reply_text(
+            "📢 <b>Kanal qo'shish</b>\n\n"
+            "Kanal ID sini yuboring (masalan: -100123456789).",
+            parse_mode=ParseMode.HTML,
+            reply_markup=ReplyKeyboardRemove()
+        )
 
+    return WAITING_FOR_CHANNEL_ID
 async def receive_channel_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         c_id = int(update.message.text)
@@ -449,16 +461,21 @@ def main():
             WAITING_FOR_VIDEO: [MessageHandler(filters.VIDEO, receive_video)]
         },
         fallbacks=[CommandHandler("cancel", cancel)]
-    )
+        )
 
     channel_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex(f"^{BTN_ADD_CHANNEL}$") & filters.User(ADMIN_ID), start_add_channel)], # Bu tugma admin menyuda yo'q edi, lekin mantiqan shu yerda
-        states={ # Agar menyuga qo'shsangiz ishlaydi, hozircha "Kanallar boshqaruvi" dan keyin chaqirish mantiqliroq
-            WAITING_FOR_CHANNEL_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_channel_id)],
-            WAITING_FOR_CHANNEL_USERNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_channel_user)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel)]
-    )
+            entry_points=[
+                # Eski matnli buyruq
+                MessageHandler(filters.Regex(f"^{BTN_ADD_CHANNEL}$") & filters.User(ADMIN_ID), start_add_channel),
+                # --- YANGI QO'SHILGAN QATOR: Inline tugma uchun ---
+                CallbackQueryHandler(start_add_channel, pattern="^add_new_channel$")
+            ],
+            states={
+                WAITING_FOR_CHANNEL_ID: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_channel_id)],
+                WAITING_FOR_CHANNEL_USERNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_channel_user)]
+            },
+            fallbacks=[CommandHandler("cancel", cancel)]
+        )
     # Delete Movie Conversation
     del_movie_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex(f"^{BTN_DEL_MOVIE}$") & filters.User(ADMIN_ID), start_delete_movie)],
