@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 ADMIN_IDS = [int(id_str.strip()) for id_str in os.getenv('ADMIN_ID').split(',')]
 CHANNEL_ID = int(os.getenv('CHANNEL_ID'))
-BOT_USERNAME = "@kino_zakaz2026_bot"  # O'zingizni bot usernameni shu yerga yozing
+BOT_USERNAME = "@AF_kino_bot"  # O'zingizni bot usernameni shu yerga yozing
 
 # Initialize database
 db = Database()
