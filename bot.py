@@ -162,15 +162,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     text = update.message.text.strip() if update.message.text else ""
 
+    # 1. Admin buyruqlariga reaksiya bildirmaslik (ular alohida handlerda)
     if user.id == ADMIN_ID and text in [BTN_ADD_MOVIE, BTN_STATS, BTN_LIST_MOVIES, BTN_MANAGE_CHANNELS]:
         return
 
-    # Bazani async to_thread orqali chaqiramiz (Bot qotib qolmasligi uchun)
+    # 2. Foydalanuvchi faolligini yangilash
     await asyncio.to_thread(db.update_user_activity, user.id)
 
+    # 3. Majburiy obunani tekshirish
     required_channels = await asyncio.to_thread(db.get_required_channels)
     if required_channels and user.id != ADMIN_ID:
-        # ASOSIY TUZATISH: Bu yerda await qo'shildi
         not_subscribed = await check_user_subscription(context.bot, user.id, required_channels)
         if not_subscribed:
             message = format_channels_list(not_subscribed)
@@ -178,36 +179,45 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text(message, parse_mode=ParseMode.HTML, reply_markup=InlineKeyboardMarkup(keyboard))
             return
 
+    # 4. Agar raqam yuborilgan bo'lsa (Kino kodi)
     if text.isdigit():
         movie_code = text
-        # Bazani async to_thread orqali chaqiramiz
         movie = await asyncio.to_thread(db.get_movie_by_code, movie_code)
 
         if movie:
             try:
-                # utils dagi clean_caption dan foydalanamiz
                 from utils import clean_caption
                 original_caption = movie.get('caption', '')
                 caption = clean_caption(original_caption, BOT_USERNAME)
 
+                # --- O'ZGARTIRILGAN JOY: protect_content=True ---
                 await context.bot.send_video(
                     chat_id=user.id,
                     video=movie['video_id'],
                     caption=caption,
-                    parse_mode=ParseMode.HTML
+                    parse_mode=ParseMode.HTML,
+                    protect_content=True  # <--- Boshqaga uzatish va saqlashni bloklaydi
                 )
-                # Ko'rishlar sonini async chaqiramiz
+                # ------------------------------------------------
+
+                # Ko'rishlar sonini oshirish
                 asyncio.create_task(asyncio.to_thread(db.increment_views, movie_code))
             except Exception as e:
-                logger.error(f"Error: {e}")
+                logger.error(f"Error sending video: {e}")
         else:
-            await update.message.reply_text("❌ Kino topilmadi.")
+            await update.message.reply_text("❌ Bunday kodli kino topilmadi.")
+
+    # 5. Agar matn yuborilgan bo'lsa (Qidiruv)
     else:
-        # Qidiruvni async chaqiramiz
         movies = await asyncio.to_thread(db.search_movie_by_name, text)
         if movies:
-            # ... (qidiruv natijalarini chiqarish kodini shu yerda qoldiring)
-            pass
+            result_text = "🔎 <b>Qidiruv natijalari:</b>\n\n"
+            for m in movies:
+                result_text += f"🎬 {m['video_name']}\n🆔 Kod: <code>{m['movie_code']}</code>\n\n"
+            
+            await update.message.reply_text(result_text, parse_mode=ParseMode.HTML)
+        else:
+            await update.message.reply_text("❌ Bunday nomli kino topilmadi.")
 # ===== ADMIN HANDLERS =====
 
 async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
