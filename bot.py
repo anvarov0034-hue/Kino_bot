@@ -91,12 +91,10 @@ def clean_caption(text):
     return text
 
 def get_next_movie_code():
-    """Navbatdagi kino kodini raqam shaklida qaytaradi (1, 2, 3...)"""
-    # Bazadagi kinolar sonini olib, unga 1 qo'shamiz
-    # Agar bazada oxirgi IDni olish imkoni bo'lsa, o'shani ishlatish to'g'riroq bo'ladi
-    # Hozircha sodda yechim:
-    count = db.get_movies_count()
-    return str(count + 1)
+    """Navbatdagi kino kodini aniqlash"""
+    # Eng oxirgi kodni olib, ustiga 1 qo'shamiz
+    last_code = db.get_last_code()
+    return str(last_code + 1)
 
 # ===== USER HANDLERS =====
 
