@@ -207,7 +207,20 @@ class Database:
             return 0
         finally:
             self.return_connection(conn)
-
+    def get_last_code(self):
+            """Bazadagi eng katta raqamli kodni topish"""
+            conn = self.get_connection()
+            try:
+                cur = conn.cursor()
+                # Kodlarni raqamga aylantirib, eng kattasini olamiz
+                cur.execute("SELECT MAX(CAST(movie_code AS INTEGER)) FROM movies")
+                max_val = cur.fetchone()[0]
+                cur.close()
+                return max_val if max_val is not None else 0
+            except Exception:
+                return 0
+            finally:
+                self.return_connection(conn)
     # ===== USERS OPERATIONS =====
 
     def add_user(self, user_id):
