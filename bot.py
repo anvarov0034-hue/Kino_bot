@@ -465,12 +465,17 @@ def main():
 
     # Admin Conversations
     movie_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex(f"^{BTN_ADD_MOVIE}$") & filters.User(ADMIN_ID), start_add_movie)],
+        entry_points=[
+            MessageHandler(filters.Regex(f"^{BTN_ADD_MOVIE}$") & filters.User(ADMIN_ID), start_add_movie)
+        ],
         states={
-            WAITING_FOR_VIDEO: [MessageHandler(filters.ALL, receive_video)]
+            WAITING_FOR_VIDEO: [
+                MessageHandler(filters.VIDEO, receive_video),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, receive_video)
+            ]
         },
         fallbacks=[CommandHandler("cancel", cancel)]
-        )
+    )
 
     channel_conv = ConversationHandler(
             entry_points=[
